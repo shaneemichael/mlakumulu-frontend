@@ -4,6 +4,7 @@ import MainLayout from '../../../components/layout/MainLayout';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Loading from '../../../components/common/Loading';
+import DeleteTouristModal from '../../../components/tourist/DeleteTouristModal';
 import { touristService } from '../../../services/touristService';
 import { useAuth } from '../../../hooks/useAuth';
 import { Tourist } from '../../../types/tourist';
@@ -13,6 +14,9 @@ const TouristsList: React.FC = () => {
   const [tourists, setTourists] = useState<Tourist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [touristToDelete, setTouristToDelete] = useState<Tourist | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
   
@@ -23,20 +27,46 @@ const TouristsList: React.FC = () => {
       return;
     }
     
-    const fetchTourists = async () => {
-      try {
-        const data = await touristService.getAllTourists();
-        setTourists(data);
-      } catch (err) {
-        setError('Failed to load tourists. Please try again later.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchTourists();
   }, [user, router]);
+  
+  const fetchTourists = async () => {
+    try {
+      const data = await touristService.getAllTourists();
+      setTourists(data);
+    } catch (err) {
+      setError('Failed to load tourists. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleDeleteClick = (tourist: Tourist) => {
+    setTouristToDelete(tourist);
+    setDeleteModalOpen(true);
+  };
+  
+  const handleDeleteConfirm = async () => {
+    if (!touristToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await touristService.deleteTourist(touristToDelete.id);
+      
+      // Remove from state
+      setTourists(tourists.filter(t => t.id !== touristToDelete.id));
+      
+      // Close modal
+      setDeleteModalOpen(false);
+      setTouristToDelete(null);
+    } catch (err) {
+      setError('Failed to delete tourist. Please try again.');
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   
   if (loading) {
     return (
@@ -107,18 +137,37 @@ const TouristsList: React.FC = () => {
                   >
                     View Details
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/dashboard/tourists/edit/${tourist.id}`)} 
-                    variant="outline"
-                    size="sm"
-                  >
-                    Edit
-                  </Button>
+                  <div className="space-x-2">
+                    <Button 
+                      onClick={() => router.push(`/dashboard/tourists/edit/${tourist.id}`)} 
+                      variant="outline"
+                      size="sm"
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      onClick={() => handleDeleteClick(tourist)}
+                      variant="danger"
+                      size="sm"
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
           ))}
         </div>
+      )}
+      
+      {touristToDelete && (
+        <DeleteTouristModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+          touristName={touristToDelete.name}
+          isDeleting={isDeleting}
+        />
       )}
     </MainLayout>
   );

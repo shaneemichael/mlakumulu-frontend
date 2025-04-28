@@ -5,6 +5,7 @@ import Button from '../../../components/common/Button';
 import Loading from '../../../components/common/Loading';
 import ProfileCard from '../../../components/tourist/ProfileCard';
 import TravelCard from '../../../components/tourist/TravelCard';
+import DeleteTouristModal from '../../../components/tourist/DeleteTouristModal';
 import { touristService } from '../../../services/touristService';
 import { travelService } from '../../../services/travelService';
 import { useAuth } from '../../../hooks/useAuth';
@@ -13,7 +14,6 @@ import { Travel } from '../../../types/travel';
 import { UserRole } from '../../../types/auth';
 
 const TouristDetail: React.FC = () => {
-  // Replace useParams with useRouter().query
   const router = useRouter();
   const { id } = router.query as { id: string };
   
@@ -21,6 +21,8 @@ const TouristDetail: React.FC = () => {
   const [travels, setTravels] = useState<Travel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   
   useEffect(() => {
@@ -33,29 +35,56 @@ const TouristDetail: React.FC = () => {
     // Add this check - Next.js may run this effect before router is ready
     if (!router.isReady || !id) return;
     
-    const fetchTouristData = async () => {
-      try {
-        const touristData = await touristService.getTourist(id);
-        setTourist(touristData);
-        
-        // Fetch tourist's travels
-        const travelsData = await travelService.getAllTravels();
-        // Filter travels for this tourist
-        const touristTravels = travelsData.filter(travel => travel.touristId === id);
-        setTravels(touristTravels);
-      } catch (err) {
-        setError('Failed to load tourist details. Please try again later.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchTouristData();
   }, [id, user, router.isReady, router]);
   
+  const fetchTouristData = async () => {
+    try {
+      const touristData = await touristService.getTourist(id);
+      setTourist(touristData);
+      
+      // Fetch tourist's travels
+      const travelsData = await travelService.getAllTravels();
+      // Filter travels for this tourist
+      const touristTravels = travelsData.filter(travel => travel.touristId === id);
+      setTravels(touristTravels);
+    } catch (err) {
+      setError('Failed to load tourist details. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleAddTravel = () => {
     router.push(`/dashboard/travels/create?touristId=${id}`);
+  };
+  
+  const handleDeleteClick = () => {
+    setDeleteModalOpen(true);
+  };
+  
+  const handleDeleteConfirm = async () => {
+    if (!tourist) return;
+    
+    setIsDeleting(true);
+    try {
+      await touristService.deleteTourist(tourist.id);
+      
+      // Redirect to tourists list with success message
+      router.push({
+        pathname: '/dashboard/tourists',
+        query: { 
+          notification: 'Tourist deleted successfully',
+          type: 'success'
+        }
+      });
+    } catch (err) {
+      setError('Failed to delete tourist. Please try again.');
+      console.error(err);
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+    }
   };
   
   if (loading) {
@@ -96,6 +125,12 @@ const TouristDetail: React.FC = () => {
           >
             Add Travel
           </Button>
+          <Button 
+            onClick={handleDeleteClick} 
+            variant="danger"
+          >
+            Delete Tourist
+          </Button>
         </div>
       </div>
       
@@ -135,6 +170,14 @@ const TouristDetail: React.FC = () => {
           ))}
         </div>
       )}
+      
+      <DeleteTouristModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        touristName={tourist.name}
+        isDeleting={isDeleting}
+      />
     </MainLayout>
   );
 };
