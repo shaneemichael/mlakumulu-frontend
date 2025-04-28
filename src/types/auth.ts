@@ -19,6 +19,9 @@ export enum UserRole {
     password: string;
     role: UserRole;
     nationality: string;
+    passportNumber?: string;
+    phoneNumber?: string;
+    email?: string;
   }
 
   export interface RegisterEmployeeDto {

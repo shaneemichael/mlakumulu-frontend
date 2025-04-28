@@ -5,12 +5,10 @@ import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Loading from '../../../components/common/Loading';
-import { touristService } from '../../../services/touristService';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../../../hooks/useAuth';
 import { CreateTouristDto } from '../../../types/tourist';
 import { UserRole } from '../../../types/auth';
-import { v4 as uuidv4 } from 'uuid';
 
 const CreateTourist: React.FC = () => {
   const [formData, setFormData] = useState<CreateTouristDto>({
@@ -52,30 +50,25 @@ const CreateTourist: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+  
     try {
-      // First create a user account
-      // … inside handleSubmit, replace your registerTourist call with:
-
-      await authService.registerTourist({
+      // If registerTourist already creates the tourist, just use its result
+      const result = await authService.registerTourist({
         username: formData.name,
-        password: 'tempPassword123', 
+        password: 'tempPassword123',
         role: UserRole.TOURIST,
-        nationality: formData.nationality
-      })
-      
-      const randomUserId = uuidv4();
-      const touristData = {
-        ...formData,
-        userId: randomUserId,
-      };
-      
-      const newTourist = await touristService.createTourist(touristData);
+        nationality: formData.nationality,
+        // add other fields as needed
+        passportNumber: formData.passportNumber,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+      });
+  
       setSuccess(true);
-      
+  
       // Redirect after short delay
       setTimeout(() => {
-        router.push(`/tourists/${newTourist.id}`);
+        router.push(`/dashboard/tourists/${result.id}`);
       }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');

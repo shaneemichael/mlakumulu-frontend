@@ -41,7 +41,7 @@ const CreateTravelPage: NextPage = () => {
   }, [isEmployee, router]);
 
   const handleSuccess = () => {
-    router.push('/travels');
+    router.push('/dashboard/travels');
   };
 
   if (!isEmployee) {

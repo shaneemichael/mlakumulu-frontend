@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
                     {new Date(travel.startDate).toLocaleDateString()} - {new Date(travel.endDate).toLocaleDateString()}
                   </p>
                   <button 
-                    onClick={() => router.push(`/travel/${travel.id}`)} // Changed to router.push
+                    onClick={() => router.push(`/dashboard/travels/${travel.id}`)} // Changed to router.push
                     className="text-blue-600 text-sm mt-2 hover:underline"
                   >
                     View details
